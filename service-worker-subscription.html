@@ -1,0 +1,86 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+# service-worker-subscription
+
+`<service-worker-subscription>` wraps the content of a firebase-document into a paper-card container.
+
+[API Docs and Demo](https://heka-house-polymer-demos.firebaseapp.com/)
+
+[Source](http://github.com/hekahouse/service-worker-subscription/)
+
+
+## Install
+
+    bower install --save HekaHouse/service-worker-subscription
+
+## Example
+
+
+## Note
+
+
+## Dependencies
+
+Element dependencies are managed via [Bower](http://bower.io/). You can
+install that via:
+
+    npm install -g bower
+
+Then, go ahead and download the element's dependencies:
+
+    bower install
+
+## Related
+
+@group HekaHouse
+@element service-worker-subscription
+@demo demo/index.html
+-->
+
+<dom-module id="service-worker-subscription">
+  <template>
+  <style>
+    :host {
+      display: block;
+    }
+  </style>
+
+  </template>
+</dom-module>
+<script>
+
+  Polymer({
+    is: 'service-worker-subscription',
+    properties: {
+      subscription: {
+        type: String,
+        notify: true
+      }
+    },
+
+    attached: function(incoming) {
+      if ('serviceWorker' in navigator) {
+       console.log('Service Worker is supported');
+       navigator.serviceWorker.register('/sw.js')
+       .then(this._processSubscription.bind(this))
+       .catch(this._subscriptionFail.bind(this));
+      }
+    },
+    _processSubscription: function(reg) {
+      console.log(':^)', reg);
+      reg.pushManager.subscribe({
+          userVisibleOnly: true
+      })
+      .then(this._subscriptionSuccess.bind(this))
+      .catch(this._subscriptionFail.bind(this));
+    },
+    _subscriptionSuccess: function(sub) {
+      this.subscription=sub.endpoint.replace("https://android.googleapis.com/gcm/send/","");
+      console.log('subscription success!');
+    },
+    _subscriptionFail: function(error) {
+      console.log(JSON.stringify(error));
+    }
+  });
+</script>

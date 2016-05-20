@@ -1,0 +1,28 @@
+{
+  "name": "service-worker-subscription",
+  "version": "1.0.1",
+  "authors": [
+    "Aron Price <aron@heka.house>"
+  ],
+  "description": "A service worker subsccription element.",
+  "keywords": [
+    "web-component",
+    "polymer",
+    "platinum",
+    "service-worker"
+  ],
+  "main": "service-worker-subscription.html",
+  "license": "https://heka-house-polymer-demos.firebaseapp.com/LICENSE",
+  "homepage": "https://github.com/HekaHouse/service-worker-subscription/",
+  "ignore": [
+    "/.*",
+    "/test/"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.2.0",
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "web-component-tester": "^4.0.0"
+  }
+}
