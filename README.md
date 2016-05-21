@@ -1,8 +1,8 @@
 # service-worker-subscription
 
-`<service-worker-subscription>` wraps the content of a firebase-document into a paper-card container.
+`<service-worker-subscription>` A Polymer element to create a service worker subscription.
 
-[API Docs and Demo](https://heka-house-polymer-demos.firebaseapp.com/)
+[API Docs and Demo](https://heka-house-polymer-demos.firebaseapp.com/service-worker-subscription)
 
 [Source](http://github.com/hekahouse/service-worker-subscription/)
 
@@ -13,9 +13,14 @@
 
 ## Example
 
+    <service-worker-subscription
+      subscription-key-path="https://YOUR-FIREBASE.firebaseio.com/subscriptions/SUBSCRIPTION-ID"
+      subscription="{{subscriptionKey}}">
+    </service-worker-subscription>
 
 ## Note
 
+Upon successful subscription the subscription key is saved to Firebase under subscription key path
 
 ## Dependencies
 
@@ -27,5 +32,9 @@ install that via:
 Then, go ahead and download the element's dependencies:
 
     bower install
+
+service-worker-subscription depends on
+
+[firebase-input](https://heka-house-polymer-demos.firebaseapp.com/firebase-input)
 
 ## Related
