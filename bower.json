@@ -1,6 +1,6 @@
 {
   "name": "service-worker-subscription",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "authors": [
     "Aron Price <aron@heka.house>"
   ],

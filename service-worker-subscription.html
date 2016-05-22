@@ -63,7 +63,8 @@ service-worker-subscription depends on
   </template>
 </dom-module>
 
-<script src="bundle.js"></script>
+<script src="pseudo-node/crypto.js"></script>
+<script src="pseudo-node/buffer.js"></script>
 <script>
 
 
@@ -105,7 +106,7 @@ service-worker-subscription depends on
       var serverECDH = crypto.createECDH('prime256v1');
       var serverPublicKey = serverECDH.generateKeys();
       var sharedSecret = serverECDH.computeSecret(this.clientPublicKey);
-      var authInfo = new Buffer('Content-Encoding: auth\0', 'utf8');
+      var authInfo = buffer.Buffer('Content-Encoding: auth\0', 'utf8');
       var prk = this._hkdf(this.clientAuthSecret, sharedSecret, authInfo, 32);
 
       // Derive the Content Encryption Key
@@ -116,17 +117,17 @@ service-worker-subscription depends on
       var nonceInfo = createInfo('nonce', this.clientPublicKey, serverPublicKey);
       var nonce = hkdf(salt, prk, nonceInfo, 12);
 
-      var padding = new Buffer(2 + paddingLength);
+      var padding = buffer.Buffer(2 + paddingLength);
       // The buffer must be only zeroes, except the length
       padding.fill(0);
       padding.writeUInt16BE(paddingLength, 0);
 
       // Create a buffer from our data, in this case a UTF-8 encoded string
-      //const plaintext = new Buffer('Push notification payload!', 'utf8');
+      //const plaintext = buffer.Buffer('Push notification payload!', 'utf8');
       var cipher = crypto.createCipheriv('id-aes128-GCM', contentEncryptionKey,
       nonce);
 
-      var pt = new Buffer(plain_text, 'utf8');
+      var pt = buffer.Buffer(plain_text, 'utf8');
       result = cipher.update(Buffer.concat(padding, pt));
       cipher.final();
       return Buffer.concat([result, cipher.getAuthTag()]).toString('base64');
@@ -145,8 +146,8 @@ service-worker-subscription depends on
       var str = JSON.stringify(sub);
       var obj = JSON.parse(str);
       var keys = obj.keys;
-      this.clientPublicKey = new Buffer(this.keys.p256dh, 'base64');
-      this.clientAuthSecret = new Buffer(this.keys.auth, 'base64');
+      this.clientPublicKey = buffer.Buffer(keys.p256dh, 'base64');
+      this.clientAuthSecret = buffer.Buffer(keys.auth, 'base64');
 
 
 
@@ -170,7 +171,7 @@ service-worker-subscription depends on
       var infoHmac = crypto.createHmac('sha256', key);
       infoHmac.update(info);
       // A one byte long buffer containing only 0x01
-      var ONE_BUFFER = new Buffer(1).fill(1);
+      var ONE_BUFFER = buffer.Buffer(1).fill(1);
       infoHmac.update(ONE_BUFFER);
       return infoHmac.digest().slice(0, length);
     },
@@ -191,7 +192,7 @@ service-worker-subscription depends on
       // server key          | 65     | 94 + len |
       // For the purposes of push encryption the length of the keys will
       // always be 65 bytes.
-      var info = new Buffer(18 + len + 1 + 5 + 1 + 2 + 65 + 2 + 65);
+      var info = buffer.Buffer(18 + len + 1 + 5 + 1 + 2 + 65 + 2 + 65);
 
       // The string 'Content-Encoding: ', as utf-8
       info.write('Content-Encoding: ');

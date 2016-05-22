@@ -4,6 +4,7 @@
   "description": "A Polymer element to create a service worker subscription.",
   "main": "index.js",
   "dependencies": {
+    "buffer": "^4.6.0",
     "crypto": "^0.0.3"
   },
   "devDependencies": {},
