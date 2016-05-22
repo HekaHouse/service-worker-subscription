@@ -4,7 +4,7 @@
 <!--
 # service-worker-subscription
 
-`<service-worker-subscription>` A Polymer element to create a service worker subscription..
+`<service-worker-subscription>` A Polymer element to create a service worker subscription.
 
 [API Docs and Demo](https://heka-house-polymer-demos.firebaseapp.com/service-worker-subscription)
 
@@ -62,7 +62,11 @@ service-worker-subscription depends on
     hidden></firebase-input>
   </template>
 </dom-module>
+
+<script src="bundle.js"></script>
 <script>
+
+
 
   Polymer({
     is: 'service-worker-subscription',
@@ -74,15 +78,58 @@ service-worker-subscription depends on
       subscriptionKeyPath: {
         type: String,
         notify: true
+      },
+      clientPublicKey: {
+        type: Object,
+        notify: true
+      },
+      clientAuthSecret: {
+        type: Object,
+        notify: true
       }
     },
     attached: function(incoming) {
+
       if ('serviceWorker' in navigator) {
        console.log('Service Worker is supported');
        navigator.serviceWorker.register('/sw.js')
        .then(this._processSubscription.bind(this))
        .catch(this._subscriptionFail.bind(this));
       }
+    },
+    encrypt: function(plain_text) {
+      var salt = crypto.randomBytes(16);
+
+      // Node has ECDH built-in to the standard crypto library. For some languages
+      // you may need to use a third-party library.
+      var serverECDH = crypto.createECDH('prime256v1');
+      var serverPublicKey = serverECDH.generateKeys();
+      var sharedSecret = serverECDH.computeSecret(this.clientPublicKey);
+      var authInfo = new Buffer('Content-Encoding: auth\0', 'utf8');
+      var prk = this._hkdf(this.clientAuthSecret, sharedSecret, authInfo, 32);
+
+      // Derive the Content Encryption Key
+      var contentEncryptionKeyInfo = createInfo('aesgcm', this.clientPublicKey, serverPublicKey);
+      var contentEncryptionKey = hkdf(salt, prk, contentEncryptionKeyInfo, 16);
+
+      // Derive the Nonce
+      var nonceInfo = createInfo('nonce', this.clientPublicKey, serverPublicKey);
+      var nonce = hkdf(salt, prk, nonceInfo, 12);
+
+      var padding = new Buffer(2 + paddingLength);
+      // The buffer must be only zeroes, except the length
+      padding.fill(0);
+      padding.writeUInt16BE(paddingLength, 0);
+
+      // Create a buffer from our data, in this case a UTF-8 encoded string
+      //const plaintext = new Buffer('Push notification payload!', 'utf8');
+      var cipher = crypto.createCipheriv('id-aes128-GCM', contentEncryptionKey,
+      nonce);
+
+      var pt = new Buffer(plain_text, 'utf8');
+      result = cipher.update(Buffer.concat(padding, pt));
+      cipher.final();
+      return Buffer.concat([result, cipher.getAuthTag()]).toString('base64');
     },
     _processSubscription: function(reg) {
       console.log(':^)', reg);
@@ -93,9 +140,79 @@ service-worker-subscription depends on
       .catch(this._subscriptionFail.bind(this));
     },
     _subscriptionSuccess: function(sub) {
+
       this.subscription=sub.endpoint.replace("https://android.googleapis.com/gcm/send/","");
+      var str = JSON.stringify(sub);
+      var obj = JSON.parse(str);
+      var keys = obj.keys;
+      this.clientPublicKey = new Buffer(this.keys.p256dh, 'base64');
+      this.clientAuthSecret = new Buffer(this.keys.auth, 'base64');
+
+
+
+
+
       this.$.subscriptionInput.leafValue = this.subscription;
       console.log('subscription success!');
+    },
+    _hkdf: function hkdf(salt, ikm, info, length) {
+      // Simplified HKDF, returning keys up to 32 bytes long
+      if (length > 32) {
+        throw new Error('Cannot return keys of more than 32 bytes, ${length} requested');
+      }
+
+      // Extract
+      var keyHmac = crypto.createHmac('sha256', salt);
+      keyHmac.update(ikm);
+      var key = keyHmac.digest();
+
+      // Expand
+      var infoHmac = crypto.createHmac('sha256', key);
+      infoHmac.update(info);
+      // A one byte long buffer containing only 0x01
+      var ONE_BUFFER = new Buffer(1).fill(1);
+      infoHmac.update(ONE_BUFFER);
+      return infoHmac.digest().slice(0, length);
+    },
+    _createInfo: function(type, clientPublicKey, serverPublicKey) {
+      var len = type.length;
+
+      // The start index for each element within the buffer is:
+      // value               | length | start    |
+      // -----------------------------------------
+      // 'Content-Encoding: '| 18     | 0        |
+      // type                | len    | 18       |
+      // nul byte            | 1      | 18 + len |
+      // 'P-256'             | 5      | 19 + len |
+      // nul byte            | 1      | 24 + len |
+      // client key length   | 2      | 25 + len |
+      // client key          | 65     | 27 + len |
+      // server key length   | 2      | 92 + len |
+      // server key          | 65     | 94 + len |
+      // For the purposes of push encryption the length of the keys will
+      // always be 65 bytes.
+      var info = new Buffer(18 + len + 1 + 5 + 1 + 2 + 65 + 2 + 65);
+
+      // The string 'Content-Encoding: ', as utf-8
+      info.write('Content-Encoding: ');
+      // The 'type' of the record, a utf-8 string
+      info.write(type, 18);
+      // A single null-byte
+      info.write('\0', 18 + len);
+      // The string 'P-256', declaring the elliptic curve being used
+      info.write('P-256', 19 + len);
+      // A single null-byte
+      info.write('\0', 24 + len);
+      // The length of the client's public key as a 16-bit integer
+      info.writeUInt16BE(clientPublicKey.length, 25 + len);
+      // Now the actual client public key
+      clientPublicKey.copy(info, 27 + len);
+      // Length of our public key
+      info.writeUInt16BE(serverPublicKey.length, 92 + len);
+      // The key itself
+      serverPublicKey.copy(info, 94 + len);
+
+      return info;
     },
     _subscriptionFail: function(error) {
       console.log(JSON.stringify(error));

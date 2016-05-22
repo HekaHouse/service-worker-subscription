@@ -1,0 +1,19 @@
+{
+  "name": "service-worker-subscription",
+  "version": "1.0.1",
+  "description": "A Polymer element to create a service worker subscription.",
+  "main": "index.js",
+  "dependencies": {
+    "crypto": "^0.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HekaHouse/service-worker-subscription/"
+  },
+  "author": "Aron Price",
+  "license": "MIT"
+}
